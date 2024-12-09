@@ -31,6 +31,7 @@
     <p><strong>Comparison:</strong> <span id="comparison">-</span></p>
     <button id="toggleCompass">Turn Off Compass</button>
     <button id="compareHeadings" disabled>Compare Headings</button>
+    <p>i am the king</p>
 
     <script>
         let useCompass = true; // Whether the compass is active
@@ -66,7 +67,7 @@
                 const rotationRateZ = event.rotationRate.alpha || 0; // Rotation rate around Z-axis
                 const timestamp = event.timeStamp;
 
-                if (lastTimestamp !== null) {
+                if (lastTimestamp !== null && !useCompass) {
                     const deltaTime = (timestamp - lastTimestamp) / 1000; // Convert to seconds
 
                     // Calculate angle from accelerometer
@@ -77,9 +78,7 @@
                     calculatedHeading = alpha * gyroAngle + (1 - alpha) * accAngle;
 
                     // Accumulate heading only when compass is off
-                    if (!useCompass) {
-                        accumulatedHeading = calculatedHeading;
-                    }
+                    accumulatedHeading = calculatedHeading;
                 }
 
                 lastTimestamp = timestamp;
@@ -103,6 +102,7 @@
                 // When turning compass off
                 lastCompassHeading = parseFloat(compassHeadingEl.innerText);
                 accumulatedHeading = 0; // Reset accumulated heading
+                calculatedHeading = 0; // Reset calculated heading
             }
 
             // Enable/disable comparison button
