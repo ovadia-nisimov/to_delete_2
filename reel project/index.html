@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compass and Gyroscope</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        h1 {
+            font-size: 24px;
+        }
+        p {
+            font-size: 18px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Compass and Gyroscope</h1>
+    <p><strong>Current Compass Heading:</strong> <span id="compassHeading">0</span>°</p>
+    <p><strong>Calculated Heading (Gyro):</strong> <span id="calculatedHeading">0</span>°</p>
+    <p><strong>Comparison:</strong> <span id="comparison">-</span></p>
+    <button id="toggleCompass">Turn Off Compass</button>
+
+    <script>
+        let useCompass = true;
+        let lastCompassHeading = 0;
+        let calculatedHeading = 0;
+        let lastTimestamp = null;
+        const alpha = 0.98; // Complementary Filter weight for gyroscope
+        const comparisonThreshold = 5; // Allowable difference in degrees
+
+        // UI Elements
+        const compassHeadingEl = document.getElementById("compassHeading");
+        const calculatedHeadingEl = document.getElementById("calculatedHeading");
+        const comparisonEl = document.getElementById("comparison");
+        const toggleCompassBtn = document.getElementById("toggleCompass");
+
+        // Event listeners
+        if (window.DeviceOrientationEvent && window.DeviceMotionEvent) {
+            // Compass (DeviceOrientation)
+            window.addEventListener("deviceorientation", (event) => {
+                if (useCompass) {
+                    lastCompassHeading = event.alpha || 0; // Use compass heading (alpha)
+                    compassHeadingEl.innerText = lastCompassHeading.toFixed(2);
+                }
+            });
+
+            // Gyroscope and Accelerometer (DeviceMotion)
+            window.addEventListener("devicemotion", (event) => {
+                const rotationRateZ = event.rotationRate.alpha || 0; // Rotation rate around Z-axis
+                const timestamp = event.timeStamp;
+
+                if (lastTimestamp !== null) {
+                    const deltaTime = (timestamp - lastTimestamp) / 1000; // Convert to seconds
+                    const gyroHeading = calculatedHeading + rotationRateZ * deltaTime;
+
+                    calculatedHeading = gyroHeading; // Update the heading
+                }
+
+                lastTimestamp = timestamp;
+
+                calculatedHeadingEl.innerText = calculatedHeading.toFixed(2);
+
+                if (!useCompass) {
+                    // Compare calculated heading to last compass heading
+                    const difference = Math.abs(calculatedHeading - lastCompassHeading);
+                    comparisonEl.innerText = difference <= comparisonThreshold ? "True" : "False";
+                }
+            });
+        } else {
+            alert("DeviceOrientation or DeviceMotion is not supported on this device.");
+        }
+
+        // Toggle compass
+        toggleCompassBtn.addEventListener("click", () => {
+            useCompass = !useCompass;
+            toggleCompassBtn.innerText = useCompass ? "Turn Off Compass" : "Turn On Compass";
+
+            if (useCompass) {
+                comparisonEl.innerText = "-"; // Reset comparison
+            }
+        });
+    </script>
+</body>
+</html>
