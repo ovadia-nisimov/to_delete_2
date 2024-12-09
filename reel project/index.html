@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compass and Gyroscope</title>
+    <title>Compass</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,122 +16,25 @@
         p {
             font-size: 18px;
         }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 10px;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
-    <h1>Compass and Gyroscope</h1>
-    <p><strong>Current Compass Heading:</strong> <span id="compassHeading">0</span>°</p>
-    <p><strong>Calculated Heading (Gyro + Acc):</strong> <span id="calculatedHeading">0</span>°</p>
-    <p><strong>Comparison:</strong> <span id="comparison">-</span></p>
-    <button id="toggleCompass">Turn Off Compass</button>
-    <button id="compareHeadings" disabled>Compare Headings</button>
-    <p>i am here</p>
+    <h1>Compass</h1>
+    <p><strong>Heading:</strong> <span id="compassHeading">0</span>°</p>
 
     <script>
-        let useCompass = true; // Whether the compass is active
-        let lastCompassHeading = 0; // Last compass heading before disabling
-        let calculatedHeading = 0; // Filtered heading from gyro and accelerometer
-        let accumulatedHeading = 0; // Heading accumulated by gyro
-        let lastTimestamp = null;
-        const alpha = 0.98; // Complementary Filter weight for gyroscope
-        const comparisonThreshold = 5; // Allowable difference in degrees
+        // בדוק אם DeviceOrientation זמין בדפדפן
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener("deviceorientation", function(event) {
+                // הנתון 'alpha' מציין את הכיוון של המכשיר ביחס לצפון (במעלות)
+                const alpha = event.alpha;  // הערך הזה הוא הכיוון בהשוואה לצפון
 
-        // UI Elements
-        const compassHeadingEl = document.getElementById("compassHeading");
-        const calculatedHeadingEl = document.getElementById("calculatedHeading");
-        const comparisonEl = document.getElementById("comparison");
-        const toggleCompassBtn = document.getElementById("toggleCompass");
-        const compareHeadingsBtn = document.getElementById("compareHeadings");
-
-        let initialHeading = 0;
-
-        // Event listeners
-        if (window.DeviceOrientationEvent && window.DeviceMotionEvent) {
-            // Compass (DeviceOrientation)
-            window.addEventListener("deviceorientation", (event) => {
-                if (useCompass) {
-                    const alpha = event.alpha || 0; // The compass heading (in degrees)
-
-                    // If this is the first time using the compass, set the initial heading
-                    if (initialHeading === 0) {
-                        initialHeading = alpha;
-                    }
-
-                    // Adjust the compass reading based on the initial heading (to compensate for device orientation)
-                    const adjustedHeading = (alpha - initialHeading + 360) % 360;
-
-                    compassHeadingEl.innerText = adjustedHeading.toFixed(2); // Display heading
-                    lastCompassHeading = adjustedHeading; // Save the last known compass heading
-                }
-            });
-
-            // Gyroscope and Accelerometer (DeviceMotion)
-            window.addEventListener("devicemotion", (event) => {
-                const accX = event.accelerationIncludingGravity.x || 0;
-                const accY = event.accelerationIncludingGravity.y || 0;
-                const accZ = event.accelerationIncludingGravity.z || 0;
-                const rotationRateZ = event.rotationRate.alpha || 0; // Rotation rate around Z-axis
-                const timestamp = event.timeStamp;
-
-                if (lastTimestamp !== null && !useCompass) {
-                    const deltaTime = (timestamp - lastTimestamp) / 1000; // Convert to seconds
-
-                    // Calculate angle from accelerometer
-                    const accAngle = Math.atan2(accY, accX) * (180 / Math.PI);
-
-                    // Integrate gyroscope data and combine with accelerometer (Complementary Filter)
-                    const gyroAngle = calculatedHeading + rotationRateZ * deltaTime;
-                    calculatedHeading = alpha * gyroAngle + (1 - alpha) * accAngle;
-
-                    // Accumulate heading only when compass is off
-                    accumulatedHeading = calculatedHeading;
-                }
-
-                lastTimestamp = timestamp;
-
-                // Update calculated heading display
-                calculatedHeadingEl.innerText = calculatedHeading.toFixed(2);
+                // עדכן את התצוגה של הכיוון
+                document.getElementById("compassHeading").innerText = alpha.toFixed(2);
             });
         } else {
-            alert("DeviceOrientation or DeviceMotion is not supported on this device.");
+            alert("DeviceOrientation לא נתמך בדפדפן הזה.");
         }
-
-        // Toggle compass
-        toggleCompassBtn.addEventListener("click", () => {
-            useCompass = !useCompass;
-            toggleCompassBtn.innerText = useCompass ? "Turn Off Compass" : "Turn On Compass";
-
-            if (useCompass) {
-                // When turning compass back on
-                comparisonEl.innerText = "-"; // Reset comparison
-            } else {
-                // When turning compass off
-                lastCompassHeading = parseFloat(compassHeadingEl.innerText);
-                accumulatedHeading = 0; // Reset accumulated heading
-                calculatedHeading = 0; // Reset calculated heading
-            }
-
-            // Enable/disable comparison button
-            compareHeadingsBtn.disabled = useCompass;
-        });
-
-        // Compare headings
-        compareHeadingsBtn.addEventListener("click", () => {
-            if (!useCompass) {
-                // Calculate the total heading based on the accumulated gyroscope data
-                const totalCalculatedHeading = lastCompassHeading + accumulatedHeading;
-                const difference = Math.abs(totalCalculatedHeading - lastCompassHeading);
-
-                // Compare with the last compass heading
-                comparisonEl.innerText = difference <= comparisonThreshold ? "True" : "False";
-            }
-        });
     </script>
 </body>
 </html>
