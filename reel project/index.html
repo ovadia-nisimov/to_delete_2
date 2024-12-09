@@ -27,15 +27,16 @@
 <body>
     <h1>Compass and Gyroscope</h1>
     <p><strong>Current Compass Heading:</strong> <span id="compassHeading">0</span>°</p>
-    <p><strong>Calculated Heading (Gyro):</strong> <span id="calculatedHeading">0</span>°</p>
+    <p><strong>Calculated Heading (Gyro + Acc):</strong> <span id="calculatedHeading">0</span>°</p>
     <p><strong>Comparison:</strong> <span id="comparison">-</span></p>
     <button id="toggleCompass">Turn Off Compass</button>
     <button id="compareHeadings" disabled>Compare Headings</button>
 
     <script>
-        let useCompass = true;
-        let lastCompassHeading = 0;
-        let calculatedHeading = 0;
+        let useCompass = true; // Whether the compass is active
+        let lastCompassHeading = 0; // Last compass heading before disabling
+        let calculatedHeading = 0; // Filtered heading from gyro and accelerometer
+        let accumulatedHeading = 0; // Heading accumulated by gyro
         let lastTimestamp = null;
         const alpha = 0.98; // Complementary Filter weight for gyroscope
         const comparisonThreshold = 5; // Allowable difference in degrees
@@ -74,10 +75,16 @@
                     // Integrate gyroscope data and combine with accelerometer (Complementary Filter)
                     const gyroAngle = calculatedHeading + rotationRateZ * deltaTime;
                     calculatedHeading = alpha * gyroAngle + (1 - alpha) * accAngle;
+
+                    // Accumulate heading only when compass is off
+                    if (!useCompass) {
+                        accumulatedHeading = calculatedHeading;
+                    }
                 }
 
                 lastTimestamp = timestamp;
 
+                // Update calculated heading display
                 calculatedHeadingEl.innerText = calculatedHeading.toFixed(2);
             });
         } else {
@@ -89,18 +96,27 @@
             useCompass = !useCompass;
             toggleCompassBtn.innerText = useCompass ? "Turn Off Compass" : "Turn On Compass";
 
-            // Enable comparison button only when compass is off
-            compareHeadingsBtn.disabled = useCompass;
-
             if (useCompass) {
+                // When turning compass back on
                 comparisonEl.innerText = "-"; // Reset comparison
+            } else {
+                // When turning compass off
+                lastCompassHeading = parseFloat(compassHeadingEl.innerText);
+                accumulatedHeading = 0; // Reset accumulated heading
             }
+
+            // Enable/disable comparison button
+            compareHeadingsBtn.disabled = useCompass;
         });
 
         // Compare headings
         compareHeadingsBtn.addEventListener("click", () => {
             if (!useCompass) {
-                const difference = Math.abs(calculatedHeading - lastCompassHeading);
+                // Calculate the total heading based on the accumulated gyroscope data
+                const totalCalculatedHeading = lastCompassHeading + accumulatedHeading;
+                const difference = Math.abs(totalCalculatedHeading - lastCompassHeading);
+
+                // Compare with the last compass heading
                 comparisonEl.innerText = difference <= comparisonThreshold ? "True" : "False";
             }
         });
