@@ -57,7 +57,8 @@
     <div class="compass">
       <div class="compass-circle"></div>
     </div>
-    <div class="direction">Direction: 0°</div>
+    <div class="direction">Compass Direction: 0°</div>
+    <div class="gyro-direction">Gyro Direction: 0°</div>
     <div class="buttons">
       <button class="start-btn">Start Compass</button>
       <button class="compare-btn" disabled>Compare Directions</button>
@@ -66,6 +67,7 @@
     <script>
       const compassCircle = document.querySelector(".compass-circle");
       const directionText = document.querySelector(".direction");
+      const gyroDirectionText = document.querySelector(".gyro-direction");
       const startBtn = document.querySelector(".start-btn");
       const compareBtn = document.querySelector(".compare-btn");
 
@@ -111,7 +113,7 @@
       function handleOrientation(event) {
         compassDirection = event.webkitCompassHeading || Math.abs(event.alpha - 360);
         compassCircle.style.transform = `translate(-50%, -50%) rotate(${-compassDirection}deg)`;
-        directionText.textContent = `Direction: ${Math.round(compassDirection)}°`;
+        directionText.textContent = `Compass Direction: ${Math.round(compassDirection)}°`;
       }
 
       function handleMotion(event) {
@@ -121,15 +123,15 @@
 
         // Read gyroscope and accelerometer data
         gyro = {
-          x: event.rotationRate.alpha,
-          y: event.rotationRate.beta,
-          z: event.rotationRate.gamma,
+          x: event.rotationRate.alpha || 0,
+          y: event.rotationRate.beta || 0,
+          z: event.rotationRate.gamma || 0,
         };
 
         accel = {
-          x: event.acceleration.x,
-          y: event.acceleration.y,
-          z: event.acceleration.z,
+          x: event.acceleration.x || 0,
+          y: event.acceleration.y || 0,
+          z: event.acceleration.z || 0,
         };
 
         // Complementary filter for angle estimation
@@ -139,6 +141,9 @@
         // Update gyroscope direction
         gyroDirection = (gyroDirection + gyro.z * deltaTime) % 360;
         if (gyroDirection < 0) gyroDirection += 360;
+
+        // Update display
+        gyroDirectionText.textContent = `Gyro Direction: ${Math.round(gyroDirection)}°`;
       }
 
       function compareDirections() {
