@@ -21,16 +21,31 @@
 <body>
     <h1>Compass</h1>
     <p><strong>Heading:</strong> <span id="compassHeading">0</span>°</p>
+    <p>csahxjsaklklsncklancklnaklsnlknl</p>
 
     <script>
-        // בדוק אם DeviceOrientation זמין בדפדפן
+        let initialAlpha = null;  // משתנה לשמירת הערך ההתחלתי של alpha
+
         if (window.DeviceOrientationEvent) {
             window.addEventListener("deviceorientation", function(event) {
-                // הנתון 'alpha' מציין את הכיוון של המכשיר ביחס לצפון (במעלות)
-                const alpha = event.alpha;  // הערך הזה הוא הכיוון בהשוואה לצפון
+                // נתון 'alpha' מציין את הכיוון של המכשיר ביחס לצפון (במעלות)
+                const alpha = event.alpha;  
 
-                // עדכן את התצוגה של הכיוון
-                document.getElementById("compassHeading").innerText = alpha.toFixed(2);
+                if (initialAlpha === null) {
+                    // אם זו הפעם הראשונה שהגענו לכאן, נשמור את הערך ההתחלתי של alpha
+                    initialAlpha = alpha;
+                }
+
+                // חישוב הכיוון האמיתי ביחס לצפון (מנרמל כך שהצפון יהיה 0 מעלות)
+                let adjustedAlpha = alpha - initialAlpha;
+
+                // אם הערך יצא שלילי, נוסיף 360 כדי להשאיר את הערך בטווח בין 0 ל-360
+                if (adjustedAlpha < 0) {
+                    adjustedAlpha += 360;
+                }
+
+                // עדכון המסך
+                document.getElementById("compassHeading").innerText = adjustedAlpha.toFixed(2);
             });
         } else {
             alert("DeviceOrientation לא נתמך בדפדפן הזה.");
