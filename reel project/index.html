@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>עובדיה</title>
+    <title>Compass</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -62,21 +62,32 @@
         <div class="compass" id="compass">
             <div class="needle" id="needle"></div>
         </div>
-        <p class="heading">Heading: <span id="compassHeading">0</span>°</p>
+        <p class="heading">עבדול: <span id="compassHeading">0</span>°</p>
     </div>
 
     <script>
         // בדוק אם DeviceOrientation זמין בדפדפן
         if (window.DeviceOrientationEvent) {
+            let initialAlpha = null;  // אחסון ערך alpha ראשון שנקבל
+            let alphaOffset = 0;      // ההפרש בין הצפון ההתחלתי לצפון הנוכחי
+
             window.addEventListener("deviceorientation", function(event) {
-                const alpha = event.alpha;  // כיוון המכשיר ביחס לצפון (0 מעלות = צפון)
+                let alpha = event.alpha;  // כיוון המכשיר ביחס לצפון (0 מעלות = צפון)
+
+                // אם אנחנו לראשונה מקבלים את ה-alpha, נשמור אותו כנקודת ייחוס
+                if (initialAlpha === null) {
+                    initialAlpha = alpha;
+                }
+
+                // חישוב ההפרש בין הצפון שנמצא עכשיו לצפון ההתחלתי
+                alphaOffset = alpha - initialAlpha;
 
                 // עדכון כיוון המכשיר במסך
-                document.getElementById("compassHeading").innerText = alpha.toFixed(2);
+                document.getElementById("compassHeading").innerText = (alphaOffset).toFixed(2);
 
                 // סיבוב המחוג לפי הכיוון
                 const needleElement = document.getElementById("needle");
-                needleElement.style.transform = `rotate(${alpha}deg)`;
+                needleElement.style.transform = `rotate(${alphaOffset}deg)`;
             });
         } else {
             alert("DeviceOrientation לא נתמך בדפדפן הזה.");
