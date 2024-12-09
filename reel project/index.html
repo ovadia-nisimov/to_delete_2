@@ -30,6 +30,7 @@
     <p><strong>Calculated Heading (Gyro):</strong> <span id="calculatedHeading">0</span>°</p>
     <p><strong>Comparison:</strong> <span id="comparison">-</span></p>
     <button id="toggleCompass">Turn Off Compass</button>
+    <button id="compareHeadings" disabled>Compare Headings</button>
 
     <script>
         let useCompass = true;
@@ -44,6 +45,7 @@
         const calculatedHeadingEl = document.getElementById("calculatedHeading");
         const comparisonEl = document.getElementById("comparison");
         const toggleCompassBtn = document.getElementById("toggleCompass");
+        const compareHeadingsBtn = document.getElementById("compareHeadings");
 
         // Event listeners
         if (window.DeviceOrientationEvent && window.DeviceMotionEvent) {
@@ -57,25 +59,26 @@
 
             // Gyroscope and Accelerometer (DeviceMotion)
             window.addEventListener("devicemotion", (event) => {
+                const accX = event.accelerationIncludingGravity.x || 0;
+                const accY = event.accelerationIncludingGravity.y || 0;
+                const accZ = event.accelerationIncludingGravity.z || 0;
                 const rotationRateZ = event.rotationRate.alpha || 0; // Rotation rate around Z-axis
                 const timestamp = event.timeStamp;
 
                 if (lastTimestamp !== null) {
                     const deltaTime = (timestamp - lastTimestamp) / 1000; // Convert to seconds
-                    const gyroHeading = calculatedHeading + rotationRateZ * deltaTime;
 
-                    calculatedHeading = gyroHeading; // Update the heading
+                    // Calculate angle from accelerometer
+                    const accAngle = Math.atan2(accY, accX) * (180 / Math.PI);
+
+                    // Integrate gyroscope data and combine with accelerometer (Complementary Filter)
+                    const gyroAngle = calculatedHeading + rotationRateZ * deltaTime;
+                    calculatedHeading = alpha * gyroAngle + (1 - alpha) * accAngle;
                 }
 
                 lastTimestamp = timestamp;
 
                 calculatedHeadingEl.innerText = calculatedHeading.toFixed(2);
-
-                if (!useCompass) {
-                    // Compare calculated heading to last compass heading
-                    const difference = Math.abs(calculatedHeading - lastCompassHeading);
-                    comparisonEl.innerText = difference <= comparisonThreshold ? "True" : "False";
-                }
             });
         } else {
             alert("DeviceOrientation or DeviceMotion is not supported on this device.");
@@ -86,8 +89,19 @@
             useCompass = !useCompass;
             toggleCompassBtn.innerText = useCompass ? "Turn Off Compass" : "Turn On Compass";
 
+            // Enable comparison button only when compass is off
+            compareHeadingsBtn.disabled = useCompass;
+
             if (useCompass) {
                 comparisonEl.innerText = "-"; // Reset comparison
+            }
+        });
+
+        // Compare headings
+        compareHeadingsBtn.addEventListener("click", () => {
+            if (!useCompass) {
+                const difference = Math.abs(calculatedHeading - lastCompassHeading);
+                comparisonEl.innerText = difference <= comparisonThreshold ? "True" : "False";
             }
         });
     </script>
