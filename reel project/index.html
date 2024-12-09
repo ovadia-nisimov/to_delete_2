@@ -90,8 +90,8 @@
       let accel = { x: 0, y: 0, z: 0 }; // Accelerometer values
       let filterAngle = 0; // Angle from complementary filter
 
+      let lastCompassDirection = 0; // Last compass direction when stopped
       let gyroValueWhenStopped = 0;
-      let compassValueWhenStopped = 0;
 
       function toggleCompass() {
         if (isCompassRunning) {
@@ -109,6 +109,10 @@
         if (typeof DeviceOrientationEvent !== "undefined") {
           window.addEventListener("deviceorientationabsolute", handleOrientation, true);
         }
+
+        // Calculate the difference between the last and current compass direction
+        const compassDifference = (compassDirection - lastCompassDirection + 360) % 360;
+        console.log(`Compass Difference: ${compassDifference}°`);
       }
 
       function stopCompass() {
@@ -116,7 +120,8 @@
         startBtn.textContent = "Start Compass";
         compareBtn.disabled = false;
 
-        compassValueWhenStopped = compassDirection;
+        // Save the last compass direction before stopping
+        lastCompassDirection = compassDirection;
         gyroValueWhenStopped = gyroDirection;
 
         window.removeEventListener("deviceorientationabsolute", handleOrientation, true);
@@ -155,14 +160,14 @@
       }
 
       function compareDirections() {
-        let compassDifference = compassDirection - compassValueWhenStopped;
+        let compassDifference = compassDirection - lastCompassDirection;
         let gyroDifference = gyroValueWhenStopped - gyroDirection;
         const differenceBetweenDifferences = Math.abs(compassDifference - gyroDifference);
         const isAccurate = differenceBetweenDifferences <= 10;
 
         resultDiv.innerHTML = `
           <p>Result: <span style="color: ${isAccurate ? 'green' : 'red'};">${isAccurate ? "TRUE" : "FALSE"}</span></p>
-          <p>Compass at stop: ${Math.round(compassValueWhenStopped)}°, Compass at start: ${Math.round(compassDirection)}°, Difference: ${Math.round(compassDifference)}°</p>
+          <p>Compass at stop: ${Math.round(lastCompassDirection)}°, Compass at start: ${Math.round(compassDirection)}°, Difference: ${Math.round(compassDifference)}°</p>
           <p>Gyro at stop: ${Math.round(gyroValueWhenStopped)}°, Gyro at start: ${Math.round(gyroDirection)}°, Difference: ${Math.round(gyroDifference)}°</p>
           <p>Difference between differences: ${Math.round(differenceBetweenDifferences)}°</p>
         `;
