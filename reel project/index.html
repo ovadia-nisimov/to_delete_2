@@ -78,6 +78,14 @@
       let deltaAngle = 0; // Change in angle using complementary filter
       let lastUpdate = performance.now();
 
+      // Complementary filter parameters
+      const alpha = 0.98; // Weight for gyroscope data (0.98 is a common value)
+
+      let gyroAngle = 0; // Angle from gyroscope
+      let accAngle = 0; // Angle from accelerometer
+
+      let isCompassStopped = false; // To track if compass is stopped
+
       function toggleCompass() {
         if (isCompassRunning) {
           stopCompass();
@@ -104,6 +112,9 @@
         // Save the last compass direction
         lastCompassDirection = compassDirection;
 
+        // Mark compass as stopped
+        isCompassStopped = true;
+
         // Remove compass listener
         window.removeEventListener("deviceorientationabsolute", handleOrientation, true);
       }
@@ -121,14 +132,30 @@
 
         // Gyroscope and accelerometer data
         const gyroZ = event.rotationRate.gamma || 0;
+        const accX = event.accelerationIncludingGravity.x || 0;
+        const accY = event.accelerationIncludingGravity.y || 0;
+        const accZ = event.accelerationIncludingGravity.z || 0;
+
+        // Calculate accelerometer angle
+        accAngle = Math.atan2(accY, accX) * (180 / Math.PI);
 
         // Update delta angle using gyroscope
-        deltaAngle += gyroZ * deltaTime;
+        gyroAngle += gyroZ * deltaTime;
 
         // Normalize angle to [0, 360]
-        deltaAngle = (deltaAngle + 360) % 360;
+        gyroAngle = (gyroAngle + 360) % 360;
 
+        // Apply complementary filter
+        deltaAngle = alpha * (gyroAngle) + (1 - alpha) * accAngle;
+
+        // Update gyro direction text
         gyroDirectionText.textContent = `Gyro Direction: ${Math.round(deltaAngle)}°`;
+
+        // If compass is stopped, we initialize the gyro direction at the compass's last direction
+        if (isCompassStopped) {
+          gyroAngle = lastCompassDirection; // Set gyro angle to the last compass direction
+          isCompassStopped = false; // Reset the stopped flag
+        }
       }
 
       function compareDirections() {
