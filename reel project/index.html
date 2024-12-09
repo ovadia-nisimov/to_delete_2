@@ -84,14 +84,8 @@
       let isCompassRunning = false;
       let compassDirection = 0; // Compass direction
       let gyroDirection = 0; // Direction calculated with gyroscope
-      let lastUpdate = performance.now(); // Timestamp for updates
-
-      let gyro = { x: 0, y: 0, z: 0 }; // Gyroscope values
-      let accel = { x: 0, y: 0, z: 0 }; // Accelerometer values
-      let filterAngle = 0; // Angle from complementary filter
-
+      let lastCompassDirection = 0; // Last compass direction when stopped
       let gyroValueWhenStopped = 0;
-      let compassValueWhenStopped = 0;
 
       function toggleCompass() {
         if (isCompassRunning) {
@@ -116,7 +110,8 @@
         startBtn.textContent = "Start Compass";
         compareBtn.disabled = false;
 
-        compassValueWhenStopped = compassDirection;
+        // Save the last compass direction before stopping
+        lastCompassDirection = compassDirection;
         gyroValueWhenStopped = gyroDirection;
 
         window.removeEventListener("deviceorientationabsolute", handleOrientation, true);
@@ -155,17 +150,26 @@
       }
 
       function compareDirections() {
-        let compassDifference = compassDirection - compassValueWhenStopped;
-        let gyroDifference = gyroValueWhenStopped - gyroDirection;
-        const differenceBetweenDifferences = Math.abs(compassDifference - gyroDifference);
-        const isAccurate = differenceBetweenDifferences <= 10;
+        // Start the compass to get the updated direction
+        startCompass();
 
-        resultDiv.innerHTML = `
-          <p>Result: <span style="color: ${isAccurate ? 'green' : 'red'};">${isAccurate ? "TRUE" : "FALSE"}</span></p>
-          <p>Compass at stop: ${Math.round(compassValueWhenStopped)}°, Compass at start: ${Math.round(compassDirection)}°, Difference: ${Math.round(compassDifference)}°</p>
-          <p>Gyro at stop: ${Math.round(gyroValueWhenStopped)}°, Gyro at start: ${Math.round(gyroDirection)}°, Difference: ${Math.round(gyroDifference)}°</p>
-          <p>Difference between differences: ${Math.round(differenceBetweenDifferences)}°</p>
-        `;
+        // Wait briefly for the compass to update
+        setTimeout(() => {
+          // Stop the compass after getting the new direction
+          stopCompass();
+
+          const compassDifference = (compassDirection - lastCompassDirection + 360) % 360;
+          const gyroDifference = gyroValueWhenStopped - gyroDirection;
+          const differenceBetweenDifferences = Math.abs(compassDifference - gyroDifference);
+          const isAccurate = differenceBetweenDifferences <= 10;
+
+          resultDiv.innerHTML = `
+            <p>Result: <span style="color: ${isAccurate ? 'green' : 'red'};">${isAccurate ? "TRUE" : "FALSE"}</span></p>
+            <p>Compass at stop: ${Math.round(lastCompassDirection)}°, Compass now: ${Math.round(compassDirection)}°, Difference: ${Math.round(compassDifference)}°</p>
+            <p>Gyro at stop: ${Math.round(gyroValueWhenStopped)}°, Gyro now: ${Math.round(gyroDirection)}°, Difference: ${Math.round(gyroDifference)}°</p>
+            <p>Difference between differences: ${Math.round(differenceBetweenDifferences)}°</p>
+          `;
+        }, 500); // Allow 500ms for the compass to update
       }
 
       startBtn.addEventListener("click", toggleCompass);
