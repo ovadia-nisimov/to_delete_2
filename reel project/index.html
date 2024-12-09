@@ -7,29 +7,62 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .compass-container {
             text-align: center;
-            margin: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            height: 300px;
+            position: relative;
         }
-        h1 {
-            font-size: 24px;
+        .compass {
+            width: 100%;
+            height: 100%;
+            background-image: url('https://www.clipartkey.com/mpngs/m/61-610693_compass-rose-png-transparent-png.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            transform-origin: center;
+            transition: transform 0.5s ease;
         }
-        p {
-            font-size: 18px;
+        .heading {
+            font-size: 36px;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #333;
+        }
+        .compass p {
+            font-size: 16px;
+            color: #888;
         }
     </style>
 </head>
 <body>
-    <h1>Compass</h1>
-    <p><strong>Heading:</strong> <span id="compassHeading">0</span>°</p>
-    <p>csahxjsaklklsncklancklnaklsnlknl</p>
+
+    <div class="compass-container">
+        <div class="compass" id="compass"></div>
+        <p class="heading">Heading: <span id="compassHeading">0</span>°</p>
+        <p>Turn your device to see the compass move.</p>
+    </div>
 
     <script>
         let initialAlpha = null;  // משתנה לשמירת הערך ההתחלתי של alpha
 
+        // בדוק אם DeviceOrientation זמין בדפדפן
         if (window.DeviceOrientationEvent) {
             window.addEventListener("deviceorientation", function(event) {
-                // נתון 'alpha' מציין את הכיוון של המכשיר ביחס לצפון (במעלות)
-                const alpha = event.alpha;  
+                const alpha = event.alpha;  // הכיוון ביחס לצפון
+                const beta = event.beta;    // הנטייה על ציר ה-X
+                const gamma = event.gamma;  // הנטייה על ציר ה-Y
 
                 if (initialAlpha === null) {
                     // אם זו הפעם הראשונה שהגענו לכאן, נשמור את הערך ההתחלתי של alpha
@@ -44,8 +77,12 @@
                     adjustedAlpha += 360;
                 }
 
-                // עדכון המסך
+                // עדכון כיוון המכשיר במסך
                 document.getElementById("compassHeading").innerText = adjustedAlpha.toFixed(2);
+
+                // סיבוב התמונה של המצפן לפי הכיוון החדש
+                const compassElement = document.getElementById("compass");
+                compassElement.style.transform = `rotate(${adjustedAlpha}deg)`;
             });
         } else {
             alert("DeviceOrientation לא נתמך בדפדפן הזה.");
