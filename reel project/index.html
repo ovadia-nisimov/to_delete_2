@@ -51,7 +51,7 @@
     <div class="compass-container">
         <div class="compass" id="compass"></div>
         <p class="heading">Heading: <span id="compassHeading">0</span>°</p>
-        <p>Turn your device to see the compass move.</p>
+        <p>ggggg.</p>
     </div>
 
     <script>
@@ -61,11 +61,9 @@
         if (window.DeviceOrientationEvent) {
             window.addEventListener("deviceorientation", function(event) {
                 const alpha = event.alpha;  // הכיוון ביחס לצפון
-                const beta = event.beta;    // הנטייה על ציר ה-X
-                const gamma = event.gamma;  // הנטייה על ציר ה-Y
 
                 if (initialAlpha === null) {
-                    // אם זו הפעם הראשונה שהגענו לכאן, נשמור את הערך ההתחלתי של alpha
+                    // נשמור את הערך ההתחלתי של alpha רק בפעם הראשונה שהאירוע קורה
                     initialAlpha = alpha;
                 }
 
