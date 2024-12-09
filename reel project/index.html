@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Compass and Sensor Comparison</title>
+    <title>Compass and Gyroscope</title>
     <style>
       body {
         display: flex;
         flex-direction: column;
-        height: 100vh;
         align-items: center;
         justify-content: center;
+        height: 100vh;
       }
 
       .compass {
@@ -36,7 +36,7 @@
       }
 
       .direction {
-        font-size: 24px;
+        font-size: 20px;
         font-weight: bold;
         margin: 10px;
       }
@@ -75,11 +75,8 @@
       let compassDirection = 0; // Compass direction
       let lastCompassDirection = 0; // Last direction when compass stopped
       let gyroDirection = 0; // Direction calculated with gyroscope
-      let lastUpdate = performance.now(); // Timestamp for updates
-
-      let gyro = { x: 0, y: 0, z: 0 }; // Gyroscope values
-      let accel = { x: 0, y: 0, z: 0 }; // Accelerometer values
-      let filterAngle = 0; // Angle from complementary filter
+      let deltaAngle = 0; // Change in angle using complementary filter
+      let lastUpdate = performance.now();
 
       function toggleCompass() {
         if (isCompassRunning) {
@@ -94,7 +91,6 @@
         startBtn.textContent = "Stop Compass";
         compareBtn.disabled = true;
 
-        // Enable compass event listeners
         if (typeof DeviceOrientationEvent !== "undefined") {
           window.addEventListener("deviceorientationabsolute", handleOrientation, true);
         }
@@ -105,8 +101,10 @@
         startBtn.textContent = "Start Compass";
         compareBtn.disabled = false;
 
-        // Save the last compass direction and remove event listeners
+        // Save the last compass direction
         lastCompassDirection = compassDirection;
+
+        // Remove compass listener
         window.removeEventListener("deviceorientationabsolute", handleOrientation, true);
       }
 
@@ -118,41 +116,36 @@
 
       function handleMotion(event) {
         const now = performance.now();
-        const deltaTime = (now - lastUpdate) / 1000; // Time since last update in seconds
+        const deltaTime = (now - lastUpdate) / 1000;
         lastUpdate = now;
 
-        // Read gyroscope and accelerometer data
-        gyro = {
-          x: event.rotationRate.alpha || 0,
-          y: event.rotationRate.beta || 0,
-          z: event.rotationRate.gamma || 0,
-        };
+        // Gyroscope and accelerometer data
+        const gyroZ = event.rotationRate.gamma || 0;
 
-        accel = {
-          x: event.acceleration.x || 0,
-          y: event.acceleration.y || 0,
-          z: event.acceleration.z || 0,
-        };
+        // Update delta angle using gyroscope
+        deltaAngle += gyroZ * deltaTime;
 
-        // Complementary filter for angle estimation
-        const accelAngle = Math.atan2(accel.y, accel.z) * (180 / Math.PI);
-        filterAngle = 0.98 * (filterAngle + gyro.y * deltaTime) + 0.02 * accelAngle;
+        // Normalize angle to [0, 360]
+        deltaAngle = (deltaAngle + 360) % 360;
 
-        // Update gyroscope direction
-        gyroDirection = (gyroDirection + gyro.z * deltaTime) % 360;
-        if (gyroDirection < 0) gyroDirection += 360;
-
-        // Update display
-        gyroDirectionText.textContent = `Gyro Direction: ${Math.round(gyroDirection)}°`;
+        gyroDirectionText.textContent = `Gyro Direction: ${Math.round(deltaAngle)}°`;
       }
 
       function compareDirections() {
-        const difference = Math.abs(lastCompassDirection - gyroDirection);
-        const isAccurate = difference <= 5; // Allowable error margin in degrees
-        alert(isAccurate ? "True" : "False");
+        const calculatedDirection = (lastCompassDirection + deltaAngle) % 360;
+        const difference = Math.abs(compassDirection - calculatedDirection);
+
+        // Allowable margin of error: ±10 degrees
+        const isAccurate = difference <= 10 || difference >= 350;
+
+        // Print calculated value
+        alert(
+          `Calculated Direction: ${Math.round(calculatedDirection)}°\n` +
+          `Comparison Result: ${isAccurate ? "True" : "False"}`
+        );
       }
 
-      // Initialize event listeners
+      // Event listeners
       startBtn.addEventListener("click", toggleCompass);
       compareBtn.addEventListener("click", compareDirections);
 
